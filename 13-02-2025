@@ -1,0 +1,172 @@
+# SQL: ON DELETE CASCADE, ON DELETE SET NULL, and ON UPDATE CASCADE
+
+## Introduction
+In relational databases, **foreign keys** establish relationships between tables, ensuring referential integrity. SQL provides different **ON DELETE** and **ON UPDATE** actions to define behaviors when referenced data is deleted or updated.
+
+### 1. ON DELETE CASCADE
+When a parent record is deleted, all associated child records in the referencing table are also deleted.
+
+#### Example:
+```sql
+CREATE TABLE Department (
+    dept_id INT PRIMARY KEY,
+    dept_name VARCHAR(100)
+);
+
+CREATE TABLE Employee (
+    emp_id INT PRIMARY KEY,
+    emp_name VARCHAR(100),
+    dept_id INT,
+    FOREIGN KEY (dept_id) REFERENCES Department(dept_id) ON DELETE CASCADE
+);
+```
+#### Behavior:
+- If a department is deleted from `Department`, all employees belonging to that department in `Employee` are also deleted.
+
+#### Execution:
+```sql
+DELETE FROM Department WHERE dept_id = 101;
+```
+#### Effect:
+- Deletes the department **dept_id = 101**.
+- Automatically removes all employees having **dept_id = 101**.
+
+---
+
+### 2. ON DELETE SET NULL
+When a parent record is deleted, the foreign key values in the child table are set to **NULL**.
+
+#### Example:
+```sql
+CREATE TABLE Employee (
+    emp_id INT PRIMARY KEY,
+    emp_name VARCHAR(100),
+    dept_id INT,
+    FOREIGN KEY (dept_id) REFERENCES Department(dept_id) ON DELETE SET NULL
+);
+```
+#### Behavior:
+- If a department is deleted from `Department`, all associated employees in `Employee` will have `dept_id` set to **NULL**.
+
+#### Execution:
+```sql
+DELETE FROM Department WHERE dept_id = 102;
+```
+#### Effect:
+- Deletes the department **dept_id = 102**.
+- Updates `Employee` table by setting **dept_id = NULL** where `dept_id = 102`.
+
+---
+
+### 3. ON UPDATE CASCADE
+When a parent record's **primary key** is updated, the corresponding foreign keys in child records are also updated.
+
+#### Example:
+```sql
+CREATE TABLE Employee (
+    emp_id INT PRIMARY KEY,
+    emp_name VARCHAR(100),
+    dept_id INT,
+    FOREIGN KEY (dept_id) REFERENCES Department(dept_id) ON UPDATE CASCADE
+);
+```
+#### Behavior:
+- If a department's `dept_id` is updated, the corresponding `dept_id` in the `Employee` table is also updated.
+
+#### Execution:
+```sql
+UPDATE Department SET dept_id = 200 WHERE dept_id = 103;
+```
+#### Effect:
+- Updates `dept_id = 103` to `200` in `Department`.
+- Automatically updates all `dept_id` values from **103 → 200** in `Employee`.
+
+---
+
+## Transactions
+Before we jump into ACID, we need to understand database transactions. A relational database allows the following actions:
+
+- Read existing data
+- Insert new data
+- Update existing data
+- Delete existing data
+- Add or alter schema (tables and relationships)
+
+A **transaction** is a set of one or more actions that represents a single, logical unit of work. For example:
+
+- Reserving three rooms at a hotel should either book all rooms or none at all.
+- Purchasing a concert ticket requires finding an available ticket and holding it until payment is completed.
+
+Without transactions, data inconsistencies like double bookings or orphaned records can occur.
+
+## ACID Properties
+ACID is an acronym for:
+
+- **Atomicity**
+- **Consistency**
+- **Isolation**
+- **Durability**
+
+### 1. Atomicity
+Ensures that a transaction follows the "all or nothing" rule. If one action in the transaction fails, the entire transaction fails.
+
+Example:
+```sql
+START TRANSACTION;
+INSERT INTO accounts (user_id, balance) VALUES (1, 500);
+UPDATE accounts SET balance = balance - 200 WHERE user_id = 1;
+COMMIT;
+```
+If an error occurs before `COMMIT`, the transaction is rolled back.
+
+### 2. Consistency
+Ensures that a transaction moves the database from one valid state to another.
+
+Example:
+- Enforcing primary and foreign key constraints to prevent orphaned records.
+- Rejecting transactions that would create invalid data.
+
+### 3. Isolation
+Ensures that transactions do not interfere with each other.
+
+| Isolation Level | Description |
+|---------------|-------------|
+| **Serializable** | Transactions are fully isolated, preventing dirty reads. |
+| **Read Uncommitted** | Transactions can see uncommitted changes (dirty reads). |
+
+Example:
+```sql
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+START TRANSACTION;
+UPDATE orders SET status = 'Processing' WHERE order_id = 10;
+COMMIT;
+```
+
+### 4. Durability
+Ensures that once a transaction is committed, it remains saved even after system failures.
+
+Example:
+- Database logs changes before committing.
+- Recovery mechanisms ensure committed transactions persist.
+
+---
+
+## Summary Table
+| Constraint | Effect on Child Table When Parent Changes |
+|------------|----------------------------------|
+| **ON DELETE CASCADE** | Deletes associated child rows |
+| **ON DELETE SET NULL** | Sets foreign key to NULL |
+| **ON UPDATE CASCADE** | Updates foreign key values |
+
+---
+
+## Practice Problems
+1. Create a `Courses` table with an `ON DELETE CASCADE` reference in the `Students` table.
+2. Implement `ON DELETE SET NULL` in a `Projects` table linked to an `Employees` table.
+3. Update a foreign key using `ON UPDATE CASCADE` and observe the behavior.
+4. Implement a transaction that ensures funds transfer between accounts follows ACID principles.
+
+---
+
+## Author
+[Lokeswari](https://github.com/LokiRameshBabu/c406firstproject)
